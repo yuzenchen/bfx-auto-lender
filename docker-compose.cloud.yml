@@ -1,0 +1,33 @@
+# 雲端部署用：docker compose -f docker-compose.cloud.yml up -d --build
+# 需在 .env 設定 DOMAIN（例：140.83.1.2.sslip.io）與 TOTP_SECRET
+name: bfx-auto-lender
+
+services:
+  bfx-lender:
+    build: .
+    container_name: bfx-auto-lender
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: bfx-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

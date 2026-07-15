@@ -1,0 +1,15 @@
+# 資料夾名稱為中文，compose 無法自動產生專案名，需明確指定
+name: bfx-auto-lender
+
+services:
+  bfx-lender:
+    build: .
+    container_name: bfx-auto-lender
+    # 只綁本機，避免對外暴露
+    ports:
+      - "127.0.0.1:3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

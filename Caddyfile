@@ -1,0 +1,3 @@
+{$DOMAIN} {
+	reverse_proxy bfx-lender:3000
+}
