@@ -82,11 +82,18 @@ export class AuthRequiredError extends Error {
   }
 }
 
+export class SetupRequiredError extends Error {
+  constructor() {
+    super("SETUP_REQUIRED");
+  }
+}
+
 // 路徑一律用相對路徑（"api/..."），讓頁面在控制台代理路徑（/acc/0/）下也能運作
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, init);
   const data = await res.json();
   if (res.status === 401 && data.error === "AUTH_REQUIRED") throw new AuthRequiredError();
+  if (res.status === 503 && data.error === "SETUP_REQUIRED") throw new SetupRequiredError();
   if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
   return data as T;
 }
@@ -97,6 +104,12 @@ export const api = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code }),
+    }),
+  setup: (apiKey: string, apiSecret: string) =>
+    request<{ ok: boolean }>("api/setup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apiKey, apiSecret }),
     }),
   getStatus: () => request<Status>("api/status"),
   getConfig: () => request<StrategyConfig>("api/config"),

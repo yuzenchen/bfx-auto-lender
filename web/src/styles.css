@@ -202,6 +202,18 @@ a:hover { color: var(--accent-200); }
 .btn-ghost.neutral { color: var(--n300); padding: 3px 12px; }
 .btn-ghost.neutral:hover { background: var(--n800); }
 
+/* ---- 控制台：帳戶改名 ---- */
+.name-edit { display: inline-flex; align-items: center; gap: 4px; }
+.name-edit input {
+  background: var(--bg);
+  border: 1px solid var(--n700);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  font: inherit;
+  width: 140px;
+}
+
 /* ---- 登入 ---- */
 .login-gate {
   min-height: 100vh;
@@ -219,6 +231,21 @@ a:hover { color: var(--accent-200); }
 }
 .login-card h1 { font-size: 18px; font-weight: 500; }
 .login-card p { font-size: 12.5px; color: var(--n400); }
+.setup-card { width: 400px; text-align: left; }
+.setup-card h1, .setup-card p { text-align: center; }
+.setup-card .field input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--n700);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: normal;
+  text-align: left;
+}
+
 .login-card input {
   background: var(--bg);
   border: 1px solid var(--n700);

@@ -30,11 +30,15 @@ try {
   process.exit(1);
 }
 
+// 對帳戶容器的內部呼叫帶上信任 token，讓有啟用 TOTP 的帳戶（商戶號）也能被控制台存取
+const internalToken = process.env.INTERNAL_TOKEN;
+const internalHeaders: Record<string, string> = internalToken ? { "x-internal-token": internalToken } : {};
+
 async function fetchJson<T>(url: string, init?: RequestInit, timeoutMs = 8000): Promise<T> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const res = await fetch(url, { ...init, signal: ctrl.signal });
+    const res = await fetch(url, { ...init, headers: { ...internalHeaders, ...init?.headers }, signal: ctrl.signal });
     const data = (await res.json()) as { error?: string };
     if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
     return data as T;
@@ -73,6 +77,23 @@ app.get("/api/accounts", async (_req, res) => {
   res.json(results);
 });
 
+app.put("/api/accounts/:idx/name", (req, res) => {
+  const idx = Number(req.params.idx);
+  const name = String((req.body as { name?: unknown })?.name ?? "").trim();
+  if (!name || name.length > 30) {
+    res.status(400).json({ error: "名稱必須為 1–30 字" });
+    return;
+  }
+  const accounts = loadAccounts();
+  if (!accounts[idx]) {
+    res.status(404).json({ error: "找不到帳戶" });
+    return;
+  }
+  accounts[idx].name = name;
+  fs.writeFileSync(accountsPath, JSON.stringify(accounts, null, 2) + "\n");
+  res.json({ ok: true, name });
+});
+
 app.post("/api/accounts/:idx/bot/:action", async (req, res) => {
   const { idx, action } = req.params;
   if (action !== "start" && action !== "stop") {
@@ -106,9 +127,9 @@ app.all(/^\/acc\/(\d+)\/.*$/, async (req: Request, res: Response) => {
   const prefix = `/acc/${idx}/`;
   const subPath = req.originalUrl.slice(prefix.length);
   try {
-    const init: RequestInit = { method: req.method };
+    const init: RequestInit = { method: req.method, headers: { ...internalHeaders } };
     if (req.method !== "GET" && req.method !== "HEAD") {
-      init.headers = { "Content-Type": "application/json" };
+      init.headers = { ...internalHeaders, "Content-Type": "application/json" };
       init.body = JSON.stringify(req.body ?? {});
     }
     const upstream = await fetch(`${account.url}/${subPath}`, init);

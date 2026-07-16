@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { AuthRequiredError, Earnings, LogEntry, Status, StrategyConfig, api } from "./api";
+import { AuthRequiredError, Earnings, LogEntry, SetupRequiredError, Status, StrategyConfig, api } from "./api";
 import { LoginGate } from "./components/LoginGate";
+import { SetupGate } from "./components/SetupGate";
 import { OverviewCards } from "./components/OverviewCards";
 import { BotControl } from "./components/BotControl";
 import { SettingsPanel } from "./components/SettingsPanel";
@@ -19,6 +20,7 @@ export default function App() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [needAuth, setNeedAuth] = useState(false);
+  const [needSetup, setNeedSetup] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -27,9 +29,14 @@ export default function App() {
       setLogs(l);
       setError(null);
       setNeedAuth(false);
+      setNeedSetup(false);
     } catch (err) {
       if (err instanceof AuthRequiredError) {
         setNeedAuth(true);
+        return;
+      }
+      if (err instanceof SetupRequiredError) {
+        setNeedSetup(true);
         return;
       }
       setError(err instanceof Error ? err.message : String(err));
@@ -68,6 +75,7 @@ export default function App() {
   const running = status?.bot.running ?? false;
 
   if (needAuth) return <LoginGate onSuccess={loadAll} />;
+  if (needSetup) return <SetupGate onSuccess={loadAll} />;
 
   return (
     <div className="app">

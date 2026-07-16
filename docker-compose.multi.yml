@@ -17,7 +17,7 @@ services:
       - PORT=3100
       - ACCOUNTS_PATH=/app/accounts.json
     volumes:
-      - ./accounts.json:/app/accounts.json:ro
+      - ./accounts.json:/app/accounts.json # 可寫：控制台支援線上改帳戶名稱
     ports:
       - "127.0.0.1:3100:3100" # 雲端部署時改由 Caddy 反向代理，移除此行
     restart: unless-stopped
@@ -45,6 +45,17 @@ services:
     # 每個帳戶各自的 port（3001、3002…依序遞增）
     # 目前綁 127.0.0.1 僅本機可連；要開放商戶外部連線時：
     #   1. 該帳戶 .env 必須先設 TOTP_SECRET（否則任何人都能操作機器人）
-    #   2. 建議走 Caddy HTTPS 反向代理（每帳戶一個子網域），而不是直接裸 HTTP 開 port
+    #   2. 建議走 Cloudflare Tunnel 路由（每帳戶一個子網域），而不是直接裸 HTTP 開 port
     ports:
       - "127.0.0.1:3001:3000"
+
+  acc-2:
+    image: bfx-auto-lender:latest
+    container_name: bfx-acc-2
+    env_file:
+      - ./accounts/acc2/.env
+    volumes:
+      - ./accounts/acc2/data:/app/data
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3002:3000"

@@ -10,6 +10,7 @@ export default function ConsoleApp() {
   const [error, setError] = useState<string | null>(null);
   const [needAuth, setNeedAuth] = useState(false);
   const [busyIndex, setBusyIndex] = useState<number | null>(null);
+  const [editing, setEditing] = useState<{ index: number; value: string } | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -30,6 +31,17 @@ export default function ConsoleApp() {
     const timer = setInterval(() => void refresh(), POLL_MS);
     return () => clearInterval(timer);
   }, [refresh]);
+
+  const handleRename = async () => {
+    if (!editing) return;
+    try {
+      await consoleApi.renameAccount(editing.index, editing.value.trim());
+      setEditing(null);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
 
   const handleToggle = async (row: AccountRow) => {
     if (!row.status) return;
@@ -117,9 +129,39 @@ export default function ConsoleApp() {
                 accounts.map((a) => (
                   <tr key={a.index}>
                     <td>
-                      <a href={`acc/${a.index}/`} target="_blank" rel="noreferrer">
-                        {a.name}
-                      </a>
+                      {editing?.index === a.index ? (
+                        <span className="name-edit">
+                          <input
+                            autoFocus
+                            maxLength={30}
+                            value={editing.value}
+                            onChange={(e) => setEditing({ index: a.index, value: e.target.value })}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") void handleRename();
+                              if (e.key === "Escape") setEditing(null);
+                            }}
+                          />
+                          <button className="btn btn-ghost neutral" onClick={() => void handleRename()}>
+                            儲存
+                          </button>
+                          <button className="btn btn-ghost neutral" onClick={() => setEditing(null)}>
+                            取消
+                          </button>
+                        </span>
+                      ) : (
+                        <span className="name-edit">
+                          <a href={`acc/${a.index}/`} target="_blank" rel="noreferrer">
+                            {a.name}
+                          </a>
+                          <button
+                            className="btn btn-ghost neutral"
+                            title="編輯名稱"
+                            onClick={() => setEditing({ index: a.index, value: a.name })}
+                          >
+                            ✎
+                          </button>
+                        </span>
+                      )}
                     </td>
                     {a.ok && a.status ? (
                       <>
@@ -148,7 +190,9 @@ export default function ConsoleApp() {
                       </>
                     ) : (
                       <td colSpan={7} className="dim">
-                        連線失敗：{a.error}
+                        {a.error === "SETUP_REQUIRED"
+                          ? "尚未設定 API Key（等待商戶完成初始化）"
+                          : `連線失敗：${a.error}`}
                       </td>
                     )}
                   </tr>
