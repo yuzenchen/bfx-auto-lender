@@ -59,11 +59,11 @@ export default function ConsoleApp() {
   if (needAuth) return <LoginGate onSuccess={() => void refresh()} />;
 
   const okAccounts = (accounts ?? []).filter((a) => a.ok && a.status);
-  const totals = {
-    available: okAccounts.reduce((s, a) => s + a.status!.available, 0),
-    lent: okAccounts.reduce((s, a) => s + a.status!.lentTotal, 0),
-    daily: okAccounts.reduce((s, a) => s + a.status!.estDailyEarning, 0),
-  };
+  const totalLent = okAccounts.reduce((s, a) => s + a.status!.lentTotal, 0);
+  const totalDaily = okAccounts.reduce((s, a) => s + a.status!.estDailyEarning, 0);
+  const runningCount = okAccounts.filter((a) => a.status!.bot.running).length;
+  // 總年化 = 加權平均：所有帳戶預估日收益 / 總放貸金額 × 365
+  const totalApr = totalLent > 0 ? (totalDaily / totalLent) * 365 * 100 : 0;
 
   return (
     <div className="app">
@@ -78,19 +78,19 @@ export default function ConsoleApp() {
 
       <section className="stats stats-3">
         <div className="stat">
-          <div className="stat-label">總可用餘額</div>
-          <div className="stat-value">${fmtUsd(totals.available)}</div>
+          <div className="stat-label">機器人數量</div>
+          <div className="stat-value">{accounts?.length ?? 0}</div>
+          <div className="stat-sub">{runningCount} 個運作中</div>
+        </div>
+        <div className="stat">
+          <div className="stat-label">總放貸金額</div>
+          <div className="stat-value">${fmtUsd(totalLent)}</div>
           <div className="stat-sub"></div>
         </div>
         <div className="stat">
-          <div className="stat-label">總放貸中</div>
-          <div className="stat-value">${fmtUsd(totals.lent)}</div>
-          <div className="stat-sub"></div>
-        </div>
-        <div className="stat">
-          <div className="stat-label">總預估日收益</div>
-          <div className="stat-value accent">${fmtUsd(totals.daily)}</div>
-          <div className="stat-sub"></div>
+          <div className="stat-label">總年化投資報酬率</div>
+          <div className="stat-value accent">{totalApr.toFixed(2)}%</div>
+          <div className="stat-sub">預估日收益 ${fmtUsd(totalDaily)}</div>
         </div>
       </section>
 
