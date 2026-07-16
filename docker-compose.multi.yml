@@ -22,6 +22,18 @@ services:
       - "127.0.0.1:3100:3100" # 雲端部署時改由 Caddy 反向代理，移除此行
     restart: unless-stopped
 
+  # Cloudflare Tunnel：外部走 Cloudflare HTTPS 進來，本機不開任何對外 port
+  # 1. Cloudflare Zero Trust → Networks → Tunnels → Create tunnel，複製 token
+  # 2. .env 加一行 CLOUDFLARE_TUNNEL_TOKEN=<token>
+  # 3. Tunnel 的 Public Hostname 設：console.yuzen.tw → HTTP → console:3100
+  # 4. 啟動：docker compose -f docker-compose.multi.yml --profile tunnel up -d
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: bfx-cloudflared
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    restart: unless-stopped
+    profiles: ["tunnel"]
+
   acc-main:
     image: bfx-auto-lender:latest
     container_name: bfx-acc-main
