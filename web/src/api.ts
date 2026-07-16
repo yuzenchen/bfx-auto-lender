@@ -55,6 +55,8 @@ export interface StrategyConfig {
   maxRateDailyPct: number;
   placeRatioPct: number;
   period: number;
+  smallAmountThreshold: number;
+  smallAmountPeriod: number;
   amountPerOrder: number;
   keepReserve: number;
   checkIntervalMinutes: number;

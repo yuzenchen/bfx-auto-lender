@@ -12,6 +12,10 @@ export interface StrategyConfig {
   placeRatioPct: number;
   /** 出借天數 2–120 */
   period: number;
+  /** 小額門檻（USD）：掛單金額低於此值時改用 smallAmountPeriod；0 = 停用 */
+  smallAmountThreshold: number;
+  /** 小額掛單的出借天數 2–120 */
+  smallAmountPeriod: number;
   /** 單筆掛單金額上限（0 = 全部一筆掛出） */
   amountPerOrder: number;
   /** 保留不出借的金額 */
@@ -28,6 +32,8 @@ export const DEFAULT_CONFIG: StrategyConfig = {
   maxRateDailyPct: 0.5,
   placeRatioPct: 95,
   period: 2,
+  smallAmountThreshold: 0,
+  smallAmountPeriod: 2,
   amountPerOrder: 0,
   keepReserve: 0,
   checkIntervalMinutes: 5,
@@ -66,6 +72,10 @@ export function validateConfig(input: Partial<StrategyConfig>): string | null {
     return "placeRatioPct 必須在 1–100 之間";
   if (input.period !== undefined && (input.period < 2 || input.period > 120))
     return "period 必須在 2–120 天之間";
+  if (input.smallAmountThreshold !== undefined && input.smallAmountThreshold < 0)
+    return "smallAmountThreshold 不可為負";
+  if (input.smallAmountPeriod !== undefined && (input.smallAmountPeriod < 2 || input.smallAmountPeriod > 120))
+    return "smallAmountPeriod 必須在 2–120 天之間";
   if (input.amountPerOrder !== undefined && input.amountPerOrder !== 0 && input.amountPerOrder < 150)
     return "amountPerOrder 必須為 0（不限制）或 ≥ 150";
   if (input.keepReserve !== undefined && input.keepReserve < 0) return "keepReserve 不可為負";

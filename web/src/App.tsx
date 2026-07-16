@@ -106,8 +106,8 @@ export default function App() {
       </div>
 
       {status && <CreditsTable credits={status.credits} />}
-      {earnings && <EarningsPanel earnings={earnings} />}
       {earnings && <RecentEarningsPanel earnings={earnings} />}
+      {earnings && <EarningsPanel earnings={earnings} />}
     </div>
   );
 }

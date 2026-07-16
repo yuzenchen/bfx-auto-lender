@@ -164,12 +164,17 @@ export class LenderBot {
       let amount = Math.min(perOrder, lendable);
       // 剩下的尾數不足最低額時併入本筆
       if (lendable - amount < MIN_OFFER_AMOUNT) amount = lendable;
-      await this.client.submitOffer({ symbol: SYMBOL, amount, rate: placeDaily, period: config.period });
+      // 小額掛單改用專屬天數與最佳出借利率，求快速成交（例：低於 500 USD 借 3 天）
+      const isSmall = config.smallAmountThreshold > 0 && amount < config.smallAmountThreshold;
+      const period = isSmall ? config.smallAmountPeriod : config.period;
+      // 小額單不設底，一律跟市場最佳出借利率
+      const rate = isSmall ? ticker.ask : placeDaily;
+      await this.client.submitOffer({ symbol: SYMBOL, amount, rate, period });
       placed++;
       lendable -= amount;
       this.log(
         "info",
-        `掛出借單 ${amount.toFixed(2)} USD @ 年化 ${dailyToApr(placeDaily).toFixed(2)}%，${config.period} 天`,
+        `掛出借單 ${amount.toFixed(2)} USD @ 年化 ${dailyToApr(rate).toFixed(2)}%，${period} 天${isSmall ? "（小額）" : ""}`,
       );
     }
 

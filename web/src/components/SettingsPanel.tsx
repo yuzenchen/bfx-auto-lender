@@ -129,6 +129,25 @@ export function SettingsPanel({
             />
           </label>
           <label className="field">
+            <span>小額門檻（USD，0 = 停用）</span>
+            <input
+              type="number"
+              min="0"
+              value={draft.smallAmountThreshold}
+              onChange={(e) => set("smallAmountThreshold", Number(e.target.value))}
+            />
+          </label>
+          <label className="field">
+            <span>小額出借天數（2–120）</span>
+            <input
+              type="number"
+              min="2"
+              max="120"
+              value={draft.smallAmountPeriod}
+              onChange={(e) => set("smallAmountPeriod", Number(e.target.value))}
+            />
+          </label>
+          <label className="field">
             <span>保留金額（USD）</span>
             <input
               type="number"
