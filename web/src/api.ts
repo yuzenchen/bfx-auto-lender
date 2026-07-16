@@ -82,7 +82,8 @@ export class AuthRequiredError extends Error {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+// 路徑一律用相對路徑（"api/..."），讓頁面在控制台代理路徑（/acc/0/）下也能運作
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, init);
   const data = await res.json();
   if (res.status === 401 && data.error === "AUTH_REQUIRED") throw new AuthRequiredError();
@@ -92,24 +93,24 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   login: (code: string) =>
-    request<{ ok: boolean }>("/api/auth/login", {
+    request<{ ok: boolean }>("api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code }),
     }),
-  getStatus: () => request<Status>("/api/status"),
-  getConfig: () => request<StrategyConfig>("/api/config"),
+  getStatus: () => request<Status>("api/status"),
+  getConfig: () => request<StrategyConfig>("api/config"),
   saveConfig: (config: StrategyConfig) =>
-    request<StrategyConfig>("/api/config", {
+    request<StrategyConfig>("api/config", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(config),
     }),
-  startBot: () => request<BotStatus>("/api/bot/start", { method: "POST" }),
-  stopBot: () => request<BotStatus>("/api/bot/stop", { method: "POST" }),
-  cancelOffer: (id: number) => request<{ ok: boolean }>(`/api/offers/cancel/${id}`, { method: "POST" }),
-  getEarnings: () => request<Earnings>("/api/earnings"),
-  getLogs: () => request<LogEntry[]>("/api/logs"),
+  startBot: () => request<BotStatus>("api/bot/start", { method: "POST" }),
+  stopBot: () => request<BotStatus>("api/bot/stop", { method: "POST" }),
+  cancelOffer: (id: number) => request<{ ok: boolean }>(`api/offers/cancel/${id}`, { method: "POST" }),
+  getEarnings: () => request<Earnings>("api/earnings"),
+  getLogs: () => request<LogEntry[]>("api/logs"),
 };
 
 export const fmtUsd = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

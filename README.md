@@ -29,6 +29,26 @@ npm run dev
 npm --prefix web run dev
 ```
 
+## 多帳戶模式（控制台）
+
+一個帳戶一個容器，加上一個控制台聚合所有帳戶：總覽（餘額/放貸中/日收益/狀態）、
+每帳戶啟停、點帳戶名稱可進入該帳戶完整儀表板（透過控制台反向代理，帳戶容器不對外開 port）。
+
+```sh
+# 1. 每個帳戶一個資料夾放 .env（BFX_API_KEY/SECRET）
+mkdir -p accounts/main && cp .env.example accounts/main/.env  # 編輯填入金鑰
+
+# 2. 帳戶清單
+cp accounts.example.json accounts.json
+
+# 3. 啟動（新增帳戶：複製 docker-compose.multi.yml 的 acc-main 區塊 + accounts.json 加一行）
+docker compose -f docker-compose.multi.yml up -d --build
+```
+
+控制台：<http://localhost:3100>；各帳戶另有獨立 port（main=3001、之後依序 3002…）可直連該帳戶儀表板。
+TOTP：控制台設在根目錄 `.env`；帳戶容器要開放外部連線（如給商戶）前，**必須**在該帳戶的
+`accounts/<名稱>/.env` 設定自己的 `TOTP_SECRET`，並建議以 Caddy HTTPS 反向代理（每帳戶一個子網域）對外。
+
 ## 策略邏輯
 
 每個檢查週期（預設 5 分鐘）：

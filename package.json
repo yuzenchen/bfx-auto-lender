@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch server/index.ts",
+    "dev:console": "tsx watch server/console.ts",
     "totp:setup": "tsx server/totp-setup.ts",
     "build:server": "tsc -p tsconfig.json",
     "build:web": "npm --prefix web run build",

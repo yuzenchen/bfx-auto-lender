@@ -5,3 +5,5 @@ web/dist/
 *.tsbuildinfo
 .env
 data/
+accounts/
+accounts.json

@@ -1,0 +1,38 @@
+# 多帳戶模式：一個帳戶一個容器 + 控制台
+# 使用：docker build -t bfx-auto-lender:latest .
+#       docker compose -f docker-compose.multi.yml up -d
+# （compose 的 bake 建置在中文路徑下有 bug，故先手動 build 再引用 image）
+# 新增帳戶：複製 acc-main 區塊改名（acc-2、acc-3…），建立 accounts/<名稱>/.env，
+#           並在 accounts.json 加一行 { "name": "...", "url": "http://acc-2:3000" }
+name: bfx-multi
+
+services:
+  console:
+    image: bfx-auto-lender:latest
+    container_name: bfx-console
+    command: ["node", "dist/console.js"]
+    env_file:
+      - .env # 控制台的 TOTP_SECRET（雲端必填）
+    environment:
+      - PORT=3100
+      - ACCOUNTS_PATH=/app/accounts.json
+    volumes:
+      - ./accounts.json:/app/accounts.json:ro
+    ports:
+      - "127.0.0.1:3100:3100" # 雲端部署時改由 Caddy 反向代理，移除此行
+    restart: unless-stopped
+
+  acc-main:
+    image: bfx-auto-lender:latest
+    container_name: bfx-acc-main
+    env_file:
+      - ./accounts/main/.env # 該帳戶的 BFX_API_KEY / BFX_API_SECRET；對外開放前必須在此設定該帳戶自己的 TOTP_SECRET
+    volumes:
+      - ./accounts/main/data:/app/data
+    restart: unless-stopped
+    # 每個帳戶各自的 port（3001、3002…依序遞增）
+    # 目前綁 127.0.0.1 僅本機可連；要開放商戶外部連線時：
+    #   1. 該帳戶 .env 必須先設 TOTP_SECRET（否則任何人都能操作機器人）
+    #   2. 建議走 Caddy HTTPS 反向代理（每帳戶一個子網域），而不是直接裸 HTTP 開 port
+    ports:
+      - "127.0.0.1:3001:3000"
