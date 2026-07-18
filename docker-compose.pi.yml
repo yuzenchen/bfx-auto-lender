@@ -1,0 +1,57 @@
+# 樹莓派（Raspberry Pi / ARM）專用：一鍵 build + 啟動，不需先手動 docker build
+# 使用：docker compose -f docker-compose.pi.yml --profile tunnel up -d --build
+# （Pi 上路徑為英文，無中文路徑 bake bug，故可直接用 build:）
+# 各 service 共用同一個 image tag，compose 只會建置一次後重用。
+# 新增帳戶：複製 acc-2 區塊改名（acc-3…），建立 accounts/<名稱>/.env，
+#           並在 accounts.json 加一行 { "name": "...", "url": "http://acc-3:3000" }
+name: bfx-multi
+
+services:
+  console:
+    build: .
+    image: bfx-auto-lender:latest
+    container_name: bfx-console
+    command: ["node", "dist/console.js"]
+    env_file:
+      - .env # 控制台的 TOTP_SECRET / INTERNAL_TOKEN / CLOUDFLARE_TUNNEL_TOKEN
+    environment:
+      - PORT=3100
+      - ACCOUNTS_PATH=/app/accounts.json
+    volumes:
+      - ./accounts.json:/app/accounts.json # 可寫：控制台支援線上改帳戶名稱
+    ports:
+      - "127.0.0.1:3100:3100" # 外部走 Cloudflare Tunnel，僅本機直連用此 port
+    restart: unless-stopped
+
+  # Cloudflare Tunnel：外部走 Cloudflare HTTPS 進來，Pi 不開任何對外 port
+  # tunnel token 沿用 Windows 上那組即可，bfx.yuzen.tw 會自動指向 Pi
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: bfx-cloudflared
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    restart: unless-stopped
+    profiles: ["tunnel"]
+
+  acc-main:
+    build: .
+    image: bfx-auto-lender:latest
+    container_name: bfx-acc-main
+    env_file:
+      - ./accounts/main/.env
+    volumes:
+      - ./accounts/main/data:/app/data
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3000"
+
+  acc-2:
+    build: .
+    image: bfx-auto-lender:latest
+    container_name: bfx-acc-2
+    env_file:
+      - ./accounts/acc2/.env
+    volumes:
+      - ./accounts/acc2/data:/app/data
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3002:3000"
