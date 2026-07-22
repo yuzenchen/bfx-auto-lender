@@ -62,14 +62,17 @@ export default function ConsoleApp() {
   const totalLent = okAccounts.reduce((s, a) => s + a.status!.lentTotal, 0);
   const totalDaily = okAccounts.reduce((s, a) => s + a.status!.estDailyEarning, 0);
   const runningCount = okAccounts.filter((a) => a.status!.bot.running).length;
-  // 總年化 = 加權平均：所有帳戶預估日收益 / 總放貸金額 × 365
-  const totalApr = totalLent > 0 ? (totalDaily / totalLent) * 365 * 100 : 0;
+  const offerCount = okAccounts.reduce((s, a) => s + a.status!.offers.length, 0);
+  const offerAmount = okAccounts.reduce(
+    (s, a) => s + a.status!.offers.reduce((sum, o) => sum + Math.abs(o.amount), 0),
+    0,
+  );
 
   return (
     <div className="app">
       <header className="header">
         <div className="header-brand">
-          <h1>放貸控制台</h1>
+          <h1>BFX bot Console</h1>
           <span className="tag">{accounts?.length ?? 0} 帳戶</span>
         </div>
       </header>
@@ -83,13 +86,13 @@ export default function ConsoleApp() {
           <div className="stat-sub">{runningCount} 個運作中</div>
         </div>
         <div className="stat">
-          <div className="stat-label">總放貸金額</div>
-          <div className="stat-value">${fmtUsd(totalLent)}</div>
-          <div className="stat-sub"></div>
+          <div className="stat-label">正在掛單數</div>
+          <div className="stat-value">{offerCount}</div>
+          <div className="stat-sub">掛單金額 ${fmtUsd(offerAmount)}</div>
         </div>
         <div className="stat">
-          <div className="stat-label">總年化投資報酬率</div>
-          <div className="stat-value accent">{totalApr.toFixed(2)}%</div>
+          <div className="stat-label">總放貸金額</div>
+          <div className="stat-value">${fmtUsd(totalLent)}</div>
           <div className="stat-sub">預估日收益 ${fmtUsd(totalDaily)}</div>
         </div>
       </section>
@@ -106,6 +109,7 @@ export default function ConsoleApp() {
                 <th>狀態</th>
                 <th className="num">可用餘額</th>
                 <th className="num">放貸中</th>
+                <th className="num">掛單中</th>
                 <th className="num">預估日收益</th>
                 <th>上次執行</th>
                 <th>結果</th>
@@ -115,13 +119,13 @@ export default function ConsoleApp() {
             <tbody>
               {accounts === null ? (
                 <tr>
-                  <td colSpan={8} className="empty">
+                  <td colSpan={9} className="empty">
                     載入中…
                   </td>
                 </tr>
               ) : accounts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="empty">
+                  <td colSpan={9} className="empty">
                     尚未設定帳戶（編輯 accounts.json）
                   </td>
                 </tr>
@@ -173,6 +177,9 @@ export default function ConsoleApp() {
                         </td>
                         <td className="num">${fmtUsd(a.status.available)}</td>
                         <td className="num">${fmtUsd(a.status.lentTotal)}</td>
+                        <td className="num">
+                          ${fmtUsd(a.status.offers.reduce((s, o) => s + Math.abs(o.amount), 0))}
+                        </td>
                         <td className="num accent">${fmtUsd(a.status.estDailyEarning)}</td>
                         <td className="muted">
                           {a.status.bot.lastRunAt ? fmtTime(a.status.bot.lastRunAt) : "—"}
@@ -189,7 +196,7 @@ export default function ConsoleApp() {
                         </td>
                       </>
                     ) : (
-                      <td colSpan={7} className="dim">
+                      <td colSpan={8} className="dim">
                         {a.error === "SETUP_REQUIRED"
                           ? "尚未設定 API Key（等待商戶完成初始化）"
                           : `連線失敗：${a.error}`}
