@@ -48,16 +48,25 @@ export function SettingsPanel({
     <section className="card">
       <div className="card-head">
         <h2>策略設定</h2>
-        <label className="form-checkbox" title="總開關：勾選後機器人運作時才會實際掛單；未勾選時只輪詢不動作">
-          <input type="checkbox" checked={draft.enabled} onChange={(e) => set("enabled", e.target.checked)} />
-          啟用自動出借
-        </label>
+        <div className="form-checkbox-row">
+          <label className="form-checkbox">
+            <input type="checkbox" checked={draft.enabled} onChange={(e) => set("enabled", e.target.checked)} />
+            啟用自動出借
+          </label>
+          <span
+            className="tip tip-icon"
+            tabIndex={0}
+            data-tip="總開關：勾選後機器人運作時才會實際掛單；未勾選時只輪詢不動作"
+          >
+            ⓘ
+          </span>
+        </div>
       </div>
 
       <div className="form">
         <div className="form-grid">
           <label className="field">
-            <span title="24h 最高日利率低於此值時不掛單；同時是掛單利率的最低地板">日利率下限（%）</span>
+            <span className="tip" tabIndex={0} data-tip="24h 最高日利率低於此值時不掛單；同時是掛單利率的最低地板">日利率下限（%）</span>
             <input
               type="number"
               step="0.001"
@@ -67,7 +76,7 @@ export function SettingsPanel({
             />
           </label>
           <label className="field">
-            <span title="24h 最高日利率超過此值時觀望不掛單，防止利率異常飆高時出借">日利率上限（%）</span>
+            <span className="tip" tabIndex={0} data-tip="24h 最高日利率超過此值時觀望不掛單，防止利率異常飆高時出借">日利率上限（%）</span>
             <input
               type="number"
               step="0.001"
@@ -79,7 +88,7 @@ export function SettingsPanel({
         </div>
 
         <label className="field">
-          <span title="掛單利率 = 24h 最高日利率 × 此比例。越低成交越快、但利率越低（建議 90–100）">掛單利率比例（% of 24h 最高）</span>
+          <span className="tip" tabIndex={0} data-tip="掛單利率 = 24h 最高日利率 × 此比例。越低成交越快、但利率越低（建議 90–100）">掛單利率比例（% of 24h 最高）</span>
           <input
             type="number"
             step="1"
@@ -110,7 +119,7 @@ export function SettingsPanel({
 
         <div className="form-grid">
           <label className="field">
-            <span title="成交後資金被鎖定的天數。短天期較靈活，長天期可鎖住當前利率">出借天數（2–120）</span>
+            <span className="tip" tabIndex={0} data-tip="成交後資金被鎖定的天數。短天期較靈活，長天期可鎖住當前利率">出借天數（2–120）</span>
             <input
               type="number"
               min="2"
@@ -120,7 +129,7 @@ export function SettingsPanel({
             />
           </label>
           <label className="field">
-            <span title="把資金拆成多筆掛出的單筆上限，0 = 全部一筆掛出（拆分可分散到期時間）">單筆掛單金額（USD）</span>
+            <span className="tip" tabIndex={0} data-tip="把資金拆成多筆掛出的單筆上限，0 = 全部一筆掛出（拆分可分散到期時間）">單筆掛單金額（USD）</span>
             <input
               type="number"
               min="0"
@@ -129,7 +138,7 @@ export function SettingsPanel({
             />
           </label>
           <label className="field">
-            <span title="掛單金額低於此值時改用小額規則：以市場最佳利率＋小額天數快速成交，避免零碎資金閒置">小額門檻（USD，0 = 停用）</span>
+            <span className="tip" tabIndex={0} data-tip="掛單金額低於此值時改用小額規則：以市場最佳利率＋小額天數快速成交，避免零碎資金閒置">小額門檻（USD，0 = 停用）</span>
             <input
               type="number"
               min="0"
@@ -138,7 +147,7 @@ export function SettingsPanel({
             />
           </label>
           <label className="field">
-            <span title="小額掛單使用的出借天數，建議設短（2–3 天）讓零碎資金保持靈活">小額出借天數（2–120）</span>
+            <span className="tip" tabIndex={0} data-tip="小額掛單使用的出借天數，建議設短（2–3 天）讓零碎資金保持靈活">小額出借天數（2–120）</span>
             <input
               type="number"
               min="2"
@@ -148,7 +157,7 @@ export function SettingsPanel({
             />
           </label>
           <label className="field">
-            <span title="永遠不出借的金額，保留在可用餘額（例如預備提領用）">保留金額（USD）</span>
+            <span className="tip" tabIndex={0} data-tip="永遠不出借的金額，保留在可用餘額（例如預備提領用）">保留金額（USD）</span>
             <input
               type="number"
               min="0"
@@ -157,7 +166,7 @@ export function SettingsPanel({
             />
           </label>
           <label className="field">
-            <span title="機器人每隔幾分鐘檢查市場並執行一輪掛單邏輯">檢查週期（分鐘）</span>
+            <span className="tip" tabIndex={0} data-tip="機器人每隔幾分鐘檢查市場並執行一輪掛單邏輯">檢查週期（分鐘）</span>
             <input
               type="number"
               min="1"
@@ -166,7 +175,7 @@ export function SettingsPanel({
             />
           </label>
           <label className="field">
-            <span title="掛單超過此時數未成交、且利率已高於目前目標時，自動取消並於下輪重掛">重掛判定（小時）</span>
+            <span className="tip" tabIndex={0} data-tip="掛單超過此時數未成交、且利率已高於目前目標時，自動取消並於下輪重掛">重掛判定（小時）</span>
             <input
               type="number"
               step="0.5"

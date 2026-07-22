@@ -141,12 +141,55 @@ a:hover { color: var(--accent-200); }
 .form { display: flex; flex-direction: column; gap: 12px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .field span { display: block; font-size: 12px; color: var(--n400); margin-bottom: 6px; }
-/* 有說明提示的欄位標籤：虛線底線暗示可 hover */
-.field span[title] {
+/* ---- 參數說明提示：桌機 hover、手機點擊（focus）都會顯示 ---- */
+.tip {
+  position: relative;
   width: fit-content;
   text-decoration: underline dotted var(--n600);
   text-underline-offset: 3px;
   cursor: help;
+}
+.tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  width: max-content;
+  max-width: min(280px, 78vw);
+  background: var(--n800);
+  border: 1px solid var(--n700);
+  color: var(--n100);
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  white-space: normal;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.tip:hover::after,
+.tip:focus::after {
+  opacity: 1;
+}
+.tip:focus {
+  outline: none;
+}
+.form-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tip-icon {
+  text-decoration: none;
+  color: var(--n400);
+  font-size: 13px;
+}
+.tip-icon::after {
+  left: auto;
+  right: 0;
 }
 .field input {
   width: 100%;
@@ -309,6 +352,13 @@ th.desc, td.desc { padding-left: 48px; }
 .log-error .log-text { color: var(--danger); }
 
 /* ---- 近一年報酬圖表 ---- */
+.chart-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.chart-inner {
+  min-width: 640px;
+}
 .chart {
   display: flex;
   align-items: flex-end;

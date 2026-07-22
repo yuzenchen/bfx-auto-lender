@@ -40,29 +40,32 @@ export function EarningsPanel({ earnings }: { earnings: Earnings }) {
           </table>
         </div>
       ) : (
-        <>
-          <div className="chart">
-            {months.map((m) => (
-              <div className="chart-col" key={m.month}>
-                <div
-                  className="chart-bar"
-                  style={{ height: `${Math.round((m.total / max) * 100)}%` }}
-                  title={`${label(m.month)}：$${fmtUsd(m.total)}`}
-                >
-                  {m.total === max && max > 0.01 && (
-                    <div className="chart-bar-label">${fmtUsd(m.total)}</div>
-                  )}
+        // 外層可橫向捲動、內層固定最小寬度：確保長條與月份標籤同寬對齊（手機左右滑動檢視）
+        <div className="chart-scroll">
+          <div className="chart-inner">
+            <div className="chart">
+              {months.map((m) => (
+                <div className="chart-col" key={m.month}>
+                  <div
+                    className="chart-bar"
+                    style={{ height: `${Math.round((m.total / max) * 100)}%` }}
+                    title={`${label(m.month)}：$${fmtUsd(m.total)}`}
+                  >
+                    {m.total === max && max > 0.01 && (
+                      <div className="chart-bar-label">${fmtUsd(m.total)}</div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            <div className="chart-baseline" />
+            <div className="chart-months">
+              {months.map((m) => (
+                <div key={m.month}>{label(m.month)}</div>
+              ))}
+            </div>
           </div>
-          <div className="chart-baseline" />
-          <div className="chart-months">
-            {months.map((m) => (
-              <div key={m.month}>{label(m.month)}</div>
-            ))}
-          </div>
-        </>
+        </div>
       )}
     </section>
   );
