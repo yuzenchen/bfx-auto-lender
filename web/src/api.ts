@@ -49,6 +49,15 @@ export interface Status {
   bot: BotStatus;
 }
 
+export interface SmartRule {
+  /** 區間下限：24h 最高日利率（%），含 */
+  minRatePct: number;
+  /** 區間上限（%），不含；null = 無上限（以上） */
+  maxRatePct: number | null;
+  /** 命中此區間時的出借天數 2–120 */
+  period: number;
+}
+
 export interface StrategyConfig {
   enabled: boolean;
   minRateDailyPct: number;
@@ -61,6 +70,8 @@ export interface StrategyConfig {
   keepReserve: number;
   checkIntervalMinutes: number;
   restaleHours: number;
+  smartRulesEnabled: boolean;
+  smartRules: SmartRule[];
 }
 
 export interface LogEntry {

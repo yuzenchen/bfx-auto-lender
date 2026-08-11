@@ -1,6 +1,15 @@
 import { LogEntry } from "../api";
 
-const fmtLogTime = (mts: number) => new Date(mts).toLocaleTimeString("zh-TW", { hour12: false });
+// 含執行日期（MM/DD）＋時間
+const fmtLogTime = (mts: number) =>
+  new Date(mts).toLocaleString("zh-TW", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
 
 export function LogsPanel({ logs }: { logs: LogEntry[] }) {
   return (

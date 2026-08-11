@@ -7,7 +7,7 @@ import {
   dailyToApr,
   getFundingTicker,
 } from "./bitfinex.js";
-import { StrategyConfig, loadConfig } from "./config.js";
+import { StrategyConfig, loadConfig, matchSmartRule } from "./config.js";
 
 const SYMBOL = "fUSD";
 const CURRENCY = "USD";
@@ -157,6 +157,18 @@ export class LenderBot {
       return `可用資金 ${lendable.toFixed(2)} USD 不足最低掛單額 ${MIN_OFFER_AMOUNT}，本輪不動作`;
     }
 
+    // 智能規則：依 24h 最高日利率落點決定出借天數；未命中任何區間則用預設天數
+    const smartRule =
+      config.smartRulesEnabled && config.smartRules.length > 0
+        ? matchSmartRule(config.smartRules, high24hDaily * 100)
+        : null;
+    if (smartRule) {
+      this.log(
+        "info",
+        `智能規則命中：24h 最高 ${(high24hDaily * 100).toFixed(4)}% 落在 ${smartRule.minRatePct}%–${smartRule.maxRatePct ?? "∞"}%，出借天數改用 ${smartRule.period} 天`,
+      );
+    }
+
     // 4. 掛單（依 amountPerOrder 分筆）
     const perOrder = config.amountPerOrder > 0 ? config.amountPerOrder : lendable;
     let placed = 0;
@@ -166,7 +178,7 @@ export class LenderBot {
       if (lendable - amount < MIN_OFFER_AMOUNT) amount = lendable;
       // 小額掛單改用專屬天數與最佳出借利率，求快速成交（例：低於 500 USD 借 3 天）
       const isSmall = config.smallAmountThreshold > 0 && amount < config.smallAmountThreshold;
-      const period = isSmall ? config.smallAmountPeriod : config.period;
+      const period = isSmall ? config.smallAmountPeriod : (smartRule?.period ?? config.period);
       // 小額單不設底，一律跟市場最佳出借利率
       const rate = isSmall ? ticker.ask : placeDaily;
       await this.client.submitOffer({ symbol: SYMBOL, amount, rate, period });
@@ -174,7 +186,7 @@ export class LenderBot {
       lendable -= amount;
       this.log(
         "info",
-        `掛出借單 ${amount.toFixed(2)} USD @ 年化 ${dailyToApr(rate).toFixed(2)}%，${period} 天${isSmall ? "（小額）" : ""}`,
+        `掛出借單 ${amount.toFixed(2)} USD @ 年化 ${dailyToApr(rate).toFixed(2)}%，${period} 天${isSmall ? "（小額）" : smartRule ? "（智能規則）" : ""}`,
       );
     }
 

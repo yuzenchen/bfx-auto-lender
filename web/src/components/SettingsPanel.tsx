@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { MarketSnapshot, StrategyConfig, dailyPctToApr, fmtApr, fmtDaily } from "../api";
+import { MarketSnapshot, SmartRule, StrategyConfig, dailyPctToApr, fmtApr, fmtDaily } from "../api";
+import { matchSmartRule, validateSmartRules } from "../smartRules";
 
 export function SettingsPanel({
   config,
@@ -21,7 +22,44 @@ export function SettingsPanel({
   const set = <K extends keyof StrategyConfig>(key: K, value: StrategyConfig[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
 
+  const setRule = (i: number, patch: Partial<SmartRule>) =>
+    setDraft((d) => ({
+      ...d,
+      smartRules: d.smartRules.map((r, idx) => (idx === i ? { ...r, ...patch } : r)),
+    }));
+
+  const addRule = () => {
+    setDraft((d) => {
+      // 預設接在最後一條規則的上限之後，方便連續輸入階梯區間
+      const last = d.smartRules[d.smartRules.length - 1];
+      const min = last?.maxRatePct ?? 0;
+      return { ...d, smartRules: [...d.smartRules, { minRatePct: min, maxRatePct: null, period: d.period }] };
+    });
+  };
+
+  const removeRule = (i: number) =>
+    setDraft((d) => ({ ...d, smartRules: d.smartRules.filter((_, idx) => idx !== i) }));
+
+  const toggleSmartRules = () => {
+    if (!draft.smartRulesEnabled) {
+      // 啟用前先檢查規則是否符合邏輯，不通過則顯示原因且不啟用
+      const err = validateSmartRules(draft.smartRules, true);
+      if (err) {
+        setMessage(`無法啟用智能規則：${err}`);
+        return;
+      }
+    }
+    setMessage(null);
+    set("smartRulesEnabled", !draft.smartRulesEnabled);
+  };
+
   const save = async () => {
+    // 儲存前驗證智能規則，不合邏輯直接擋下並說明
+    const ruleErr = validateSmartRules(draft.smartRules, draft.smartRulesEnabled);
+    if (ruleErr) {
+      setMessage(`儲存失敗：${ruleErr}`);
+      return;
+    }
     setSaving(true);
     setMessage(null);
     try {
@@ -185,6 +223,77 @@ export function SettingsPanel({
               onChange={(e) => set("restaleHours", Number(e.target.value))}
             />
           </label>
+        </div>
+
+        <div className="smart-rules">
+          <div className="smart-rules-head">
+            <span className="tip" tabIndex={0} data-tip="依 24h 最高日利率落在哪個區間，改用該區間的出借天數掛單；未命中任何區間時用預設出借天數。小額單不受影響，維持小額天數">
+              智能規則
+            </span>
+            <button
+              className={`btn btn-toggle${draft.smartRulesEnabled ? "" : " btn-ghost neutral"}`}
+              onClick={toggleSmartRules}
+            >
+              {draft.smartRulesEnabled ? "已啟用" : "未啟用"}
+            </button>
+          </div>
+
+          {draft.smartRules.length > 0 && (
+            <div className="smart-rule-list">
+              <div className="smart-rule-row smart-rule-header">
+                <span>利率下限（%）</span>
+                <span>利率上限（%）</span>
+                <span>掛單天數</span>
+                <span />
+              </div>
+              {draft.smartRules.map((r, i) => {
+                const hit =
+                  draft.smartRulesEnabled &&
+                  market !== null &&
+                  matchSmartRule(draft.smartRules, market.high24hDaily) === r;
+                return (
+                  <div className={`smart-rule-row${hit ? " smart-rule-hit" : ""}`} key={i}>
+                    <input
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      value={r.minRatePct}
+                      onChange={(e) => setRule(i, { minRatePct: Number(e.target.value) })}
+                    />
+                    <input
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      placeholder="以上"
+                      value={r.maxRatePct ?? ""}
+                      onChange={(e) =>
+                        setRule(i, { maxRatePct: e.target.value === "" ? null : Number(e.target.value) })
+                      }
+                    />
+                    <input
+                      type="number"
+                      min="2"
+                      max="120"
+                      value={r.period}
+                      onChange={(e) => setRule(i, { period: Number(e.target.value) })}
+                    />
+                    <button className="btn-ghost" onClick={() => removeRule(i)} title="刪除規則">
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="smart-rules-actions">
+            <button className="btn btn-ghost neutral" onClick={addRule}>
+              ＋ 新增規則
+            </button>
+            {draft.smartRules.length === 0 && (
+              <span className="form-hint">例：0.029–0.03 掛 30 天、0.03–0.04 掛 60 天、0.04 以上掛 120 天</span>
+            )}
+          </div>
         </div>
 
         <div className="form-actions">

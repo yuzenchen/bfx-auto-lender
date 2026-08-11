@@ -191,7 +191,8 @@ a:hover { color: var(--accent-200); }
   left: auto;
   right: 0;
 }
-.field input {
+.field input,
+.smart-rule-row input {
   width: 100%;
   background: var(--bg);
   border: 1px solid var(--n700);
@@ -222,6 +223,39 @@ a:hover { color: var(--accent-200); }
 .form-hint .ok { color: var(--accent-300); }
 .form-hint .no { color: var(--danger); }
 .form-actions { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+
+/* 智能規則 */
+.smart-rules {
+  border-top: 1px solid var(--n700);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.smart-rules-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--n200);
+}
+.smart-rule-list { display: flex; flex-direction: column; gap: 6px; }
+.smart-rule-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 28px;
+  gap: 8px;
+  align-items: center;
+}
+.smart-rule-header {
+  font-size: 11px;
+  color: var(--n500);
+}
+.smart-rule-row input { width: 100%; min-width: 0; }
+.smart-rule-hit input { border-color: var(--accent); }
+.smart-rule-row .btn-ghost { padding: 4px 6px; line-height: 1; }
+.smart-rules-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.smart-rules-actions .form-hint { margin: 0; }
 .form-message { font-size: 12px; color: var(--accent-300); }
 
 /* ---- 按鈕（外框式，不實心填色） ---- */
