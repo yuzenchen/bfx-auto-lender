@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { AuthRequiredError, Earnings, LogEntry, SetupRequiredError, Status, StrategyConfig, api } from "./api";
+import { AuthRequiredError, Earnings, History, LogEntry, SetupRequiredError, Status, StrategyConfig, api } from "./api";
 import { LoginGate } from "./components/LoginGate";
 import { SetupGate } from "./components/SetupGate";
 import { OverviewCards } from "./components/OverviewCards";
@@ -9,6 +9,7 @@ import { OffersTable } from "./components/OffersTable";
 import { CreditsTable } from "./components/CreditsTable";
 import { EarningsPanel } from "./components/EarningsPanel";
 import { RecentEarningsPanel } from "./components/RecentEarningsPanel";
+import { HistoryPanel } from "./components/HistoryPanel";
 import { LogsPanel } from "./components/LogsPanel";
 
 const POLL_MS = 15_000;
@@ -17,6 +18,7 @@ export default function App() {
   const [status, setStatus] = useState<Status | null>(null);
   const [config, setConfig] = useState<StrategyConfig | null>(null);
   const [earnings, setEarnings] = useState<Earnings | null>(null);
+  const [history, setHistory] = useState<History | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [needAuth, setNeedAuth] = useState(false);
@@ -47,6 +49,7 @@ export default function App() {
     void refresh();
     void api.getConfig().then(setConfig).catch(() => {});
     void api.getEarnings().then(setEarnings).catch(() => {});
+    void api.getHistory().then(setHistory).catch(() => {});
   }, [refresh]);
 
   useEffect(() => {
@@ -114,6 +117,7 @@ export default function App() {
       </div>
 
       {status && <CreditsTable credits={status.credits} />}
+      {history && <HistoryPanel history={history} />}
       {earnings && <RecentEarningsPanel earnings={earnings} />}
       {earnings && <EarningsPanel earnings={earnings} />}
     </div>

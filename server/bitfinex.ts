@@ -28,11 +28,21 @@ export interface FundingCredit {
   id: number;
   symbol: string;
   mtsCreate: number;
+  mtsUpdate: number;
   amount: number;
   status: string;
   rate: number; // 日利率
   period: number;
   mtsOpening: number;
+}
+
+export interface FundingTrade {
+  id: number;
+  mts: number;
+  offerId: number;
+  amount: number;
+  rate: number; // 日利率
+  period: number;
 }
 
 export interface FundingTicker {
@@ -105,6 +115,7 @@ function parseCreditRows(rows: unknown[][]): FundingCredit[] {
     id: r[0] as number,
     symbol: r[1] as string,
     mtsCreate: r[3] as number,
+    mtsUpdate: r[4] as number,
     amount: r[5] as number,
     status: r[7] as string,
     rate: r[11] as number,
@@ -192,6 +203,37 @@ export class BitfinexClient {
   async getAllLent(symbol: string): Promise<FundingCredit[]> {
     const [credits, loans] = [await this.getCredits(symbol), await this.getLoans(symbol)];
     return [...credits, ...loans].sort((a, b) => a.mtsOpening - b.mtsOpening);
+  }
+
+  /** 已結束（歸還）的放貸合約：credits + loans 歷史合併，以 id 去重（同一合約可能兩邊都有紀錄） */
+  async getLentHistory(symbol: string, startMts: number): Promise<FundingCredit[]> {
+    const [credits, loans] = [
+      await this.signedPost<unknown[][]>(`v2/auth/r/funding/credits/${symbol}/hist`, { start: startMts, limit: 500 }),
+      await this.signedPost<unknown[][]>(`v2/auth/r/funding/loans/${symbol}/hist`, { start: startMts, limit: 500 }),
+    ];
+    const byId = new Map<number, FundingCredit>();
+    for (const c of [...parseCreditRows(credits), ...parseCreditRows(loans)]) {
+      const prev = byId.get(c.id);
+      if (!prev || c.mtsUpdate > prev.mtsUpdate) byId.set(c.id, c);
+    }
+    return [...byId.values()].sort((a, b) => b.mtsUpdate - a.mtsUpdate);
+  }
+
+  /** 成功出借（掛單成交）紀錄 */
+  async getFundingTrades(symbol: string, startMts: number): Promise<FundingTrade[]> {
+    // [ID, CURRENCY, MTS_CREATE, OFFER_ID, AMOUNT, RATE, PERIOD, MAKER]
+    const rows = await this.signedPost<unknown[][]>(`v2/auth/r/funding/trades/${symbol}/hist`, {
+      start: startMts,
+      limit: 250,
+    });
+    return rows.map((r) => ({
+      id: r[0] as number,
+      mts: r[2] as number,
+      offerId: r[3] as number,
+      amount: r[4] as number,
+      rate: r[5] as number,
+      period: r[6] as number,
+    }));
   }
 
   async submitOffer(opts: { symbol: string; amount: number; rate: number; period: number }): Promise<void> {

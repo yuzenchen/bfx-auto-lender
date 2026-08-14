@@ -1,10 +1,20 @@
 import { CreditView, fmtApr, fmtDaily, fmtRate, fmtTime, fmtUsd } from "../api";
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** 到期日在此天數內的放貸單顯示提醒 */
+const EXPIRY_SOON_DAYS = 3;
+
 export function CreditsTable({ credits }: { credits: CreditView[] }) {
   const totalLent = credits.reduce((sum, c) => sum + Math.abs(c.amount), 0);
   const dailyEarning = credits.reduce((sum, c) => sum + Math.abs(c.amount) * c.rate, 0);
   const avgDaily =
     totalLent > 0 ? credits.reduce((sum, c) => sum + Math.abs(c.amount) * c.rateDaily, 0) / totalLent : 0;
+
+  const now = Date.now();
+  const expiryOf = (c: CreditView) => c.mtsOpening + c.period * DAY_MS;
+  const daysLeft = (c: CreditView) => (expiryOf(c) - now) / DAY_MS;
+  const expiringSoon = credits.filter((c) => daysLeft(c) <= EXPIRY_SOON_DAYS);
+  const expiringTotal = expiringSoon.reduce((sum, c) => sum + Math.abs(c.amount), 0);
 
   return (
     <section>
@@ -23,6 +33,11 @@ export function CreditsTable({ credits }: { credits: CreditView[] }) {
               預估日收益 <span className="accent">${fmtUsd(dailyEarning)}</span>
             </span>
           </>
+        )}
+        {expiringSoon.length > 0 && (
+          <span className="summary warn">
+            ⚠ {expiringSoon.length} 筆將於 {EXPIRY_SOON_DAYS} 天內到期（${fmtUsd(expiringTotal)}）
+          </span>
         )}
       </div>
       <div className="table-wrap">
@@ -45,16 +60,23 @@ export function CreditsTable({ credits }: { credits: CreditView[] }) {
                 </td>
               </tr>
             ) : (
-              credits.map((c) => (
-                <tr key={c.id}>
-                  <td>{fmtUsd(Math.abs(c.amount))}</td>
-                  <td>{fmtRate(c.rateDaily, c.rateApr)}</td>
-                  <td className="num accent">${fmtUsd(Math.abs(c.amount) * c.rate)}</td>
-                  <td className="num">{c.period}</td>
-                  <td className="num muted">{fmtTime(c.mtsOpening)}</td>
-                  <td className="num muted">{fmtTime(c.mtsOpening + c.period * 24 * 60 * 60 * 1000)}</td>
-                </tr>
-              ))
+              credits.map((c) => {
+                const left = daysLeft(c);
+                const soon = left <= EXPIRY_SOON_DAYS;
+                return (
+                  <tr key={c.id} className={soon ? "row-expiring" : undefined}>
+                    <td>{fmtUsd(Math.abs(c.amount))}</td>
+                    <td>{fmtRate(c.rateDaily, c.rateApr)}</td>
+                    <td className="num accent">${fmtUsd(Math.abs(c.amount) * c.rate)}</td>
+                    <td className="num">{c.period}</td>
+                    <td className="num muted">{fmtTime(c.mtsOpening)}</td>
+                    <td className="num muted">
+                      {fmtTime(expiryOf(c))}
+                      {soon && <span className="tag tag-warn">剩 {Math.max(0, Math.ceil(left))} 天</span>}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

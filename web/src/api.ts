@@ -87,6 +87,23 @@ export interface Earnings {
   recentTotal: number;
 }
 
+export interface HistoryEntry {
+  id: number;
+  /** 出借 = 成交時間；歸還 = 合約結束時間 */
+  mts: number;
+  amount: number;
+  rateDaily: number;
+  rateApr: number;
+  period: number;
+  /** 僅歸還紀錄有：合約起始時間 */
+  mtsOpening?: number;
+}
+
+export interface History {
+  lent: HistoryEntry[];
+  returned: HistoryEntry[];
+}
+
 export class AuthRequiredError extends Error {
   constructor() {
     super("AUTH_REQUIRED");
@@ -134,6 +151,7 @@ export const api = {
   stopBot: () => request<BotStatus>("api/bot/stop", { method: "POST" }),
   cancelOffer: (id: number) => request<{ ok: boolean }>(`api/offers/cancel/${id}`, { method: "POST" }),
   getEarnings: () => request<Earnings>("api/earnings"),
+  getHistory: () => request<History>("api/history"),
   getLogs: () => request<LogEntry[]>("api/logs"),
 };
 

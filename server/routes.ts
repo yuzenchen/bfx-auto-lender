@@ -107,6 +107,41 @@ export function createRoutes(client: BitfinexClient, bot: LenderBot): Router {
     }
   });
 
+  router.get("/history", async (_req, res) => {
+    try {
+      const start = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      const [trades, closed, active] = [
+        await client.getFundingTrades(SYMBOL, start),
+        await client.getLentHistory(SYMBOL, start),
+        await client.getAllLent(SYMBOL),
+      ];
+      // 歷史端點可能包含仍在放貸中的合約（loan ↔ credit 轉換的中間紀錄），排除避免誤報歸還
+      const activeIds = new Set(active.map((c) => c.id));
+      const lent = trades.map((t) => ({
+        id: t.id,
+        mts: t.mts,
+        amount: Math.abs(t.amount),
+        rateDaily: t.rate * 100,
+        rateApr: dailyToApr(t.rate),
+        period: t.period,
+      }));
+      const returned = closed
+        .filter((c) => !activeIds.has(c.id))
+        .map((c) => ({
+          id: c.id,
+          mts: c.mtsUpdate,
+          amount: Math.abs(c.amount),
+          rateDaily: c.rate * 100,
+          rateApr: dailyToApr(c.rate),
+          period: c.period,
+          mtsOpening: c.mtsOpening,
+        }));
+      res.json({ lent, returned });
+    } catch (err) {
+      res.status(502).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
   router.get("/logs", (_req, res) => {
     res.json(bot.getLogs());
   });
