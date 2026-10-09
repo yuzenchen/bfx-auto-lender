@@ -2,9 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 export interface SmartRule {
-  /** 區間下限：24h 最高日利率（%），含 */
+  /** 區間下限：掛單利率（%，= 24h 最高 × 掛單利率比例，含下限地板），含 */
   minRatePct: number;
-  /** 區間上限：24h 最高日利率（%），不含；null = 無上限（以上） */
+  /** 區間上限：掛單利率（%），不含；null = 無上限（以上） */
   maxRatePct: number | null;
   /** 命中此區間時的出借天數 2–120 */
   period: number;
@@ -33,7 +33,7 @@ export interface StrategyConfig {
   checkIntervalMinutes: number;
   /** 掛單超過此小時數未成交且利率偏離市場時取消重掛 */
   restaleHours: number;
-  /** 智能規則開關：依 24h 最高日利率落點套用對應出借天數 */
+  /** 智能規則開關：依掛單利率（24h 最高 × 掛單利率比例）落點套用對應出借天數 */
   smartRulesEnabled: boolean;
   /** 智能規則列表（區間不可重疊） */
   smartRules: SmartRule[];
@@ -146,7 +146,7 @@ export function validateSmartRules(rules: SmartRule[], enabled: boolean): string
   return null;
 }
 
-/** 找出 24h 最高日利率（%）命中的規則；下限含、上限不含（無上限 = 以上皆命中） */
+/** 找出掛單利率（%）命中的規則；下限含、上限不含（無上限 = 以上皆命中） */
 export function matchSmartRule(rules: SmartRule[], ratePct: number): SmartRule | null {
   return rules.find((r) => ratePct >= r.minRatePct && (r.maxRatePct === null || ratePct < r.maxRatePct)) ?? null;
 }

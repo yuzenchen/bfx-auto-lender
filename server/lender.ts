@@ -157,15 +157,16 @@ export class LenderBot {
       return `可用資金 ${lendable.toFixed(2)} USD 不足最低掛單額 ${MIN_OFFER_AMOUNT}，本輪不動作`;
     }
 
-    // 智能規則：依 24h 最高日利率落點決定出借天數；未命中任何區間則用預設天數
+    // 智能規則：依掛單利率（24h 最高 × 掛單利率比例，含下限地板）落點決定出借天數；
+    // 未命中任何區間則用預設天數（小額單不受影響）
     const smartRule =
       config.smartRulesEnabled && config.smartRules.length > 0
-        ? matchSmartRule(config.smartRules, high24hDaily * 100)
+        ? matchSmartRule(config.smartRules, placeDaily * 100)
         : null;
     if (smartRule) {
       this.log(
         "info",
-        `智能規則命中：24h 最高 ${(high24hDaily * 100).toFixed(4)}% 落在 ${smartRule.minRatePct}%–${smartRule.maxRatePct ?? "∞"}%，出借天數改用 ${smartRule.period} 天`,
+        `智能規則命中：掛單利率 ${(placeDaily * 100).toFixed(4)}%（24h 最高 ${(high24hDaily * 100).toFixed(4)}% × ${config.placeRatioPct}%）落在 ${smartRule.minRatePct}%–${smartRule.maxRatePct ?? "∞"}%，出借天數改用 ${smartRule.period} 天`,
       );
     }
 

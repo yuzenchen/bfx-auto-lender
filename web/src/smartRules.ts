@@ -34,7 +34,7 @@ export function validateSmartRules(rules: SmartRule[], enabled: boolean): string
   return null;
 }
 
-/** 找出 24h 最高日利率（%）命中的規則；下限含、上限不含 */
+/** 找出掛單利率（%）命中的規則；下限含、上限不含 */
 export function matchSmartRule(rules: SmartRule[], ratePct: number): SmartRule | null {
   return rules.find((r) => ratePct >= r.minRatePct && (r.maxRatePct === null || ratePct < r.maxRatePct)) ?? null;
 }

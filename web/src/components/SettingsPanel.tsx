@@ -227,7 +227,7 @@ export function SettingsPanel({
 
         <div className="smart-rules">
           <div className="smart-rules-head">
-            <span className="tip" tabIndex={0} data-tip="依 24h 最高日利率落在哪個區間，改用該區間的出借天數掛單；未命中任何區間時用預設出借天數。小額單不受影響，維持小額天數">
+            <span className="tip" tabIndex={0} data-tip="依掛單利率（24h 最高 × 掛單利率比例，不低於下限）落在哪個區間，改用該區間的出借天數掛單；未命中任何區間時用預設出借天數。小額單不受影響，維持小額天數">
               智能規則
             </span>
             <button
@@ -250,7 +250,7 @@ export function SettingsPanel({
                 const hit =
                   draft.smartRulesEnabled &&
                   market !== null &&
-                  matchSmartRule(draft.smartRules, market.high24hDaily) === r;
+                  matchSmartRule(draft.smartRules, placeRate) === r;
                 return (
                   <div className={`smart-rule-row${hit ? " smart-rule-hit" : ""}`} key={i}>
                     <input

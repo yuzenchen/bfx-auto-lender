@@ -50,7 +50,7 @@ export interface Status {
 }
 
 export interface SmartRule {
-  /** 區間下限：24h 最高日利率（%），含 */
+  /** 區間下限：掛單利率（%，= 24h 最高 × 掛單利率比例，含下限地板），含 */
   minRatePct: number;
   /** 區間上限（%），不含；null = 無上限（以上） */
   maxRatePct: number | null;
