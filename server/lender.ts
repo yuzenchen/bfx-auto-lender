@@ -13,6 +13,7 @@ const SYMBOL = "fUSD";
 const CURRENCY = "USD";
 const MIN_OFFER_AMOUNT = 150;
 const MAX_OFFERS_PER_CYCLE = 10;
+const SMALL_OFFER_RESTALE_HOURS = 2;
 
 export interface LogEntry {
   time: number;
@@ -131,6 +132,20 @@ export class LenderBot {
     let cancelled = 0;
     for (const offer of offers) {
       const ageHours = (Date.now() - offer.mtsCreated) / 3_600_000;
+      // 小額單（以原始金額判斷，避免部分成交的大單被誤判）：固定 2 小時，且市場最佳利率已低於掛單利率才重掛
+      const isSmallOffer =
+        config.smallAmountThreshold > 0 && Math.abs(offer.amountOrig) < config.smallAmountThreshold;
+      if (isSmallOffer) {
+        if (ageHours >= SMALL_OFFER_RESTALE_HOURS && offer.rate > ticker.ask * 1.001) {
+          await this.client.cancelOffer(offer.id);
+          cancelled++;
+          this.log(
+            "info",
+            `取消未成交小額掛單 #${offer.id}（${offer.amount.toFixed(2)} USD @ 年化 ${dailyToApr(offer.rate).toFixed(2)}%，已掛 ${ageHours.toFixed(1)} 小時，市場最佳已變為年化 ${dailyToApr(ticker.ask).toFixed(2)}%）`,
+          );
+        }
+        continue;
+      }
       if (ageHours >= config.restaleHours && offer.rate > placeDaily * 1.001) {
         await this.client.cancelOffer(offer.id);
         cancelled++;

@@ -176,7 +176,7 @@ export function SettingsPanel({
             />
           </label>
           <label className="field">
-            <span className="tip" tabIndex={0} data-tip="掛單金額低於此值時改用小額規則：以市場最佳利率＋小額天數快速成交，且不受日利率範圍限制，避免零碎資金閒置">小額門檻（USD，0 = 停用）</span>
+            <span className="tip" tabIndex={0} data-tip="掛單金額低於此值時改用小額規則：以市場最佳利率＋小額天數快速成交，且不受日利率範圍限制，避免零碎資金閒置；掛出 2 小時未成交會自動依市價重掛">小額門檻（USD，0 = 停用）</span>
             <input
               type="number"
               min="0"
@@ -213,7 +213,7 @@ export function SettingsPanel({
             />
           </label>
           <label className="field">
-            <span className="tip" tabIndex={0} data-tip="掛單超過此時數未成交、且利率已高於目前目標時，自動取消並於下輪重掛">重掛判定（小時）</span>
+            <span className="tip" tabIndex={0} data-tip="掛單超過此時數未成交、且利率已高於目前目標時，自動取消並於下輪重掛。小額單固定 2 小時：未成交且市場最佳利率已低於掛單利率時，以當下最佳利率重掛">重掛判定（小時）</span>
             <input
               type="number"
               step="0.5"
