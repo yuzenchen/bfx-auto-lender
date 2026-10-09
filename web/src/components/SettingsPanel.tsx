@@ -149,7 +149,7 @@ export function SettingsPanel({
               {inRange ? (
                 <span className="ok"> ✓ 在範圍內，將以 {fmtDaily(placeRate)} 掛單</span>
               ) : (
-                <span className="no"> ✗ 不在範圍內，不掛單</span>
+                <span className="no"> ✗ 不在範圍內，一般單不掛（小額單照常以市價掛出）</span>
               )}
             </>
           )}
@@ -176,7 +176,7 @@ export function SettingsPanel({
             />
           </label>
           <label className="field">
-            <span className="tip" tabIndex={0} data-tip="掛單金額低於此值時改用小額規則：以市場最佳利率＋小額天數快速成交，避免零碎資金閒置">小額門檻（USD，0 = 停用）</span>
+            <span className="tip" tabIndex={0} data-tip="掛單金額低於此值時改用小額規則：以市場最佳利率＋小額天數快速成交，且不受日利率範圍限制，避免零碎資金閒置">小額門檻（USD，0 = 停用）</span>
             <input
               type="number"
               min="0"

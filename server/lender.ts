@@ -146,15 +146,23 @@ export class LenderBot {
       return `已取消 ${cancelled} 筆過時掛單，15 秒後重新評估`;
     }
 
-    // 2. 24h 最高日利率不在設定範圍內 → 不掛單
-    if (high24hDaily < minDaily || high24hDaily > maxDaily) {
-      return `24h 最高日利率 ${(high24hDaily * 100).toFixed(4)}% 不在範圍 ${config.minRateDailyPct}%–${config.maxRateDailyPct}% 內，本輪不掛單`;
-    }
-
-    // 3. 計算可掛金額
+    // 2. 計算可掛金額
     let lendable = available - config.keepReserve;
     if (lendable < MIN_OFFER_AMOUNT) {
       return `可用資金 ${lendable.toFixed(2)} USD 不足最低掛單額 ${MIN_OFFER_AMOUNT}，本輪不動作`;
+    }
+
+    // 3. 24h 最高日利率不在設定範圍內 → 一般單不掛；小額單不受範圍限制，照常以市價掛出
+    const rangeText = `24h 最高日利率 ${(high24hDaily * 100).toFixed(4)}% 不在範圍 ${config.minRateDailyPct}%–${config.maxRateDailyPct}% 內`;
+    if (high24hDaily < minDaily || high24hDaily > maxDaily) {
+      const smallOnly = config.smallAmountThreshold > 0 && lendable < config.smallAmountThreshold;
+      if (!smallOnly) return `${rangeText}，本輪不掛單`;
+      await this.client.submitOffer({ symbol: SYMBOL, amount: lendable, rate: ticker.ask, period: config.smallAmountPeriod });
+      this.log(
+        "info",
+        `掛出借單 ${lendable.toFixed(2)} USD @ 年化 ${dailyToApr(ticker.ask).toFixed(2)}%，${config.smallAmountPeriod} 天（小額，不受範圍限制）`,
+      );
+      return `${rangeText}；小額 ${lendable.toFixed(2)} USD 以市價掛出`;
     }
 
     // 智能規則：依掛單利率（24h 最高 × 掛單利率比例，含下限地板）落點決定出借天數；
