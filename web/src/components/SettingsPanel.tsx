@@ -99,6 +99,17 @@ export function SettingsPanel({
   const placeRate = market
     ? Math.max((market.high24hDaily * draft.placeRatioPct) / 100, draft.minRateDailyPct)
     : 0;
+  const floorApplied =
+    market !== null &&
+    placeRate === draft.minRateDailyPct &&
+    (market.high24hDaily * draft.placeRatioPct) / 100 < draft.minRateDailyPct;
+  const hitRule = draft.smartRulesEnabled && market !== null ? matchSmartRule(draft.smartRules, placeRate) : null;
+
+  const saveButton = (
+    <button className="btn" onClick={() => void save()} disabled={saving}>
+      {saving ? "儲存中…" : "儲存設定"}
+    </button>
+  );
 
   // 收合時的摘要依「已儲存」設定顯示，而非未儲存的草稿
   const chips: { text: string; on?: boolean }[] = [
@@ -133,7 +144,8 @@ export function SettingsPanel({
       </button>
 
       <div className="strategy-body" hidden={!open}>
-      <div className="form">
+      <div className="split-b">
+      <div className="pane">
         <div className="form-checkbox-row">
           <label className="form-checkbox">
             <input type="checkbox" checked={draft.enabled} onChange={(e) => set("enabled", e.target.checked)} />
@@ -148,7 +160,8 @@ export function SettingsPanel({
           </span>
         </div>
 
-        <div className="form-grid-4">
+        <div className="group-title">利率</div>
+        <div className="form-grid-3">
           <label className="field">
             <span className="tip" tabIndex={0} data-tip="24h 最高日利率低於此值時不掛單；同時是掛單利率的最低地板">日利率下限（%）</span>
             <input
@@ -180,19 +193,9 @@ export function SettingsPanel({
               onChange={(e) => set("placeRatioPct", Number(e.target.value))}
             />
           </label>
-          <label className="field">
-            <span className="tip" tabIndex={0} data-tip="成交後資金被鎖定的天數。短天期較靈活，長天期可鎖住當前利率">出借天數（2–120）</span>
-            <input
-              type="number"
-              min="2"
-              max="120"
-              value={draft.period}
-              onChange={(e) => set("period", Number(e.target.value))}
-            />
-          </label>
         </div>
 
-        <div className="form-hint">
+        <div className="form-hint only-narrow">
           換算年化{" "}
           <span className="range">
             {fmtApr(dailyPctToApr(draft.minRateDailyPct))} – {fmtApr(dailyPctToApr(draft.maxRateDailyPct))}
@@ -210,7 +213,18 @@ export function SettingsPanel({
           )}
         </div>
 
+        <div className="group-title">掛單與資金</div>
         <div className="form-grid-4">
+          <label className="field">
+            <span className="tip" tabIndex={0} data-tip="成交後資金被鎖定的天數。短天期較靈活，長天期可鎖住當前利率">出借天數（2–120）</span>
+            <input
+              type="number"
+              min="2"
+              max="120"
+              value={draft.period}
+              onChange={(e) => set("period", Number(e.target.value))}
+            />
+          </label>
           <label className="field">
             <span className="tip" tabIndex={0} data-tip="把資金拆成多筆掛出的單筆上限，0 = 全部一筆掛出（拆分可分散到期時間）">單筆掛單金額（USD）</span>
             <input
@@ -218,6 +232,24 @@ export function SettingsPanel({
               min="0"
               value={draft.amountPerOrder}
               onChange={(e) => set("amountPerOrder", Number(e.target.value))}
+            />
+          </label>
+          <label className="field">
+            <span className="tip" tabIndex={0} data-tip="永遠不出借的金額，保留在可用餘額（例如預備提領用）">保留金額（USD）</span>
+            <input
+              type="number"
+              min="0"
+              value={draft.keepReserve}
+              onChange={(e) => set("keepReserve", Number(e.target.value))}
+            />
+          </label>
+          <label className="field">
+            <span className="tip" tabIndex={0} data-tip="機器人每隔幾分鐘檢查市場並執行一輪掛單邏輯">檢查週期（分鐘）</span>
+            <input
+              type="number"
+              min="1"
+              value={draft.checkIntervalMinutes}
+              onChange={(e) => set("checkIntervalMinutes", Number(e.target.value))}
             />
           </label>
           <label className="field">
@@ -240,24 +272,6 @@ export function SettingsPanel({
             />
           </label>
           <label className="field">
-            <span className="tip" tabIndex={0} data-tip="永遠不出借的金額，保留在可用餘額（例如預備提領用）">保留金額（USD）</span>
-            <input
-              type="number"
-              min="0"
-              value={draft.keepReserve}
-              onChange={(e) => set("keepReserve", Number(e.target.value))}
-            />
-          </label>
-          <label className="field">
-            <span className="tip" tabIndex={0} data-tip="機器人每隔幾分鐘檢查市場並執行一輪掛單邏輯">檢查週期（分鐘）</span>
-            <input
-              type="number"
-              min="1"
-              value={draft.checkIntervalMinutes}
-              onChange={(e) => set("checkIntervalMinutes", Number(e.target.value))}
-            />
-          </label>
-          <label className="field">
             <span className="tip" tabIndex={0} data-tip="掛單超過此時數未成交、且利率已高於目前目標時，自動取消並於下輪重掛。小額單固定 2 小時：未成交且市場最佳利率已低於掛單利率時，以當下最佳利率重掛">重掛判定（小時）</span>
             <input
               type="number"
@@ -270,18 +284,18 @@ export function SettingsPanel({
           </label>
         </div>
 
+        <div className="group-title group-title-row">
+          <span className="tip" tabIndex={0} data-tip="依掛單利率（24h 最高 × 掛單利率比例，不低於下限）落在哪個區間，改用該區間的出借天數掛單；未命中任何區間時用預設出借天數。小額單不受影響，維持小額天數">
+            智能規則
+          </span>
+          <button
+            className={`btn btn-toggle${draft.smartRulesEnabled ? "" : " btn-ghost neutral"}`}
+            onClick={toggleSmartRules}
+          >
+            {draft.smartRulesEnabled ? "已啟用" : "未啟用"}
+          </button>
+        </div>
         <div className="smart-rules">
-          <div className="smart-rules-head">
-            <span className="tip" tabIndex={0} data-tip="依掛單利率（24h 最高 × 掛單利率比例，不低於下限）落在哪個區間，改用該區間的出借天數掛單；未命中任何區間時用預設出借天數。小額單不受影響，維持小額天數">
-              智能規則
-            </span>
-            <button
-              className={`btn btn-toggle${draft.smartRulesEnabled ? "" : " btn-ghost neutral"}`}
-              onClick={toggleSmartRules}
-            >
-              {draft.smartRulesEnabled ? "已啟用" : "未啟用"}
-            </button>
-          </div>
 
           {draft.smartRules.length > 0 && (
             <div className="smart-rule-list">
@@ -341,12 +355,90 @@ export function SettingsPanel({
           </div>
         </div>
 
-        <div className="form-actions">
-          <button className="btn" onClick={() => void save()} disabled={saving}>
-            {saving ? "儲存中…" : "儲存設定"}
-          </button>
+        <div className="form-actions only-narrow">
+          {saveButton}
           {message && <span className="form-message">{message}</span>}
         </div>
+      </div>
+
+      <aside className="preview-panel only-wide">
+        <div className="group-title preview-title">
+          本輪試算 <span className="preview-title-sub">· 依目前輸入</span>
+        </div>
+        {market ? (
+          <>
+            <div className="preview-step">1 · 範圍判斷</div>
+            <div className="preview-row">
+              <span className="k">24h 最高</span>
+              <span className="v">
+                {fmtDaily(market.high24hDaily)}（年化 {fmtApr(market.high24hApr)}）
+              </span>
+            </div>
+            <div className="preview-row">
+              <span className="k">
+                範圍 {draft.minRateDailyPct}–{draft.maxRateDailyPct}%
+              </span>
+              <span className={`v ${inRange ? "ok" : "no"}`}>{inRange ? "✓ 在範圍內" : "✗ 不在範圍內"}</span>
+            </div>
+
+            <div className="preview-step">2 · 一般單</div>
+            {inRange ? (
+              <>
+                <div className="preview-row">
+                  <span className="k">掛單利率</span>
+                  <span className="v">
+                    {fmtDaily(placeRate)}（年化 {fmtApr(dailyPctToApr(placeRate))}）{floorApplied && " · 下限地板"}
+                  </span>
+                </div>
+                <div className="preview-row">
+                  <span className="k">出借天數</span>
+                  {draft.smartRulesEnabled ? (
+                    hitRule ? (
+                      <span className="v ok">
+                        智能規則{" "}
+                        {hitRule.maxRatePct === null
+                          ? `${hitRule.minRatePct}% 以上`
+                          : `${hitRule.minRatePct}–${hitRule.maxRatePct}%`}{" "}
+                        → {hitRule.period} 天
+                      </span>
+                    ) : (
+                      <span className="v">未命中規則 → {draft.period} 天</span>
+                    )
+                  ) : (
+                    <span className="v">{draft.period} 天</span>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="preview-row">
+                <span className="k">一般單</span>
+                <span className="v no">本輪不掛</span>
+              </div>
+            )}
+
+            {draft.smallAmountThreshold > 0 && (
+              <>
+                <div className="preview-step">3 · 小額單（&lt;{draft.smallAmountThreshold} USD）</div>
+                <div className="preview-row">
+                  <span className="k">市價</span>
+                  <span className="v">
+                    {fmtDaily(market.bestAskDaily)} · {draft.smallAmountPeriod} 天
+                  </span>
+                </div>
+                <div className="preview-note">不受範圍限制</div>
+              </>
+            )}
+          </>
+        ) : (
+          <div className="preview-note">等待市場資料…</div>
+        )}
+        <div className="preview-divider" />
+        {saveButton}
+        {message && <span className="form-message">{message}</span>}
+        <div className="preview-note">
+          換算年化範圍 {fmtApr(dailyPctToApr(draft.minRateDailyPct))} – {fmtApr(dailyPctToApr(draft.maxRateDailyPct))}
+        </div>
+      </aside>
       </div>
       </div>
     </section>

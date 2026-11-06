@@ -184,9 +184,51 @@ a:hover { color: var(--accent-200); }
 .chip-on { color: var(--accent-300); background: var(--accent-900); }
 .strategy-toggle-text { font-size: 12px; color: var(--n400); white-space: nowrap; }
 .strategy-body { padding: 4px 18px 20px; border-top: 1px solid var(--n800); }
-.strategy-body .form { padding-top: 16px; }
-.form-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-@media (max-width: 900px) { .form-grid-4 { grid-template-columns: 1fr 1fr; } }
+.form-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: end; }
+.form-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; align-items: end; }
+@media (max-width: 900px) { .form-grid-3, .form-grid-4 { grid-template-columns: 1fr 1fr; } }
+
+/* 策略設定內文：左表單、右「本輪試算」面板；≤900px 改單欄並隱藏試算面板 */
+.split-b { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 28px; align-items: start; padding-top: 16px; }
+.split-b .pane { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.split-b .smart-rules { border-top: none; padding-top: 0; }
+.group-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--n300);
+  letter-spacing: 0.02em;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--n800);
+}
+.group-title-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.preview-panel {
+  position: sticky;
+  top: 16px;
+  background: var(--bg);
+  border: 1px solid var(--n800);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.preview-panel .preview-title { margin: 0; }
+.preview-title-sub { color: var(--n500); font-weight: 400; }
+.preview-row { display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; }
+.preview-row .k { color: var(--n400); }
+.preview-row .v { color: var(--n100); font-variant-numeric: tabular-nums; text-align: right; }
+.preview-row .v.ok { color: var(--accent-300); }
+.preview-row .v.no { color: var(--danger); }
+.preview-step { font-size: 11px; color: var(--n500); margin-bottom: -4px; }
+.preview-divider { border-top: 1px solid var(--n800); }
+.preview-panel .btn { width: 100%; }
+.preview-note { font-size: 11.5px; color: var(--n500); line-height: 1.5; }
+@media (min-width: 901px) { .only-narrow { display: none !important; } }
+@media (max-width: 900px) {
+  .split-b { grid-template-columns: 1fr; }
+  .only-wide { display: none !important; }
+}
 @media (max-width: 600px) {
   .strategy-head { padding: 12px 14px; }
   .strategy-head .strategy-chips { order: 3; width: 100%; }
@@ -235,7 +277,6 @@ a:hover { color: var(--accent-200); }
 .earnings-total { font-size: 15px; font-weight: 500; color: var(--accent-300); font-variant-numeric: tabular-nums; }
 
 /* ---- 表單 ---- */
-.form { display: flex; flex-direction: column; gap: 12px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .field span { display: block; font-size: 12px; color: var(--n400); margin-bottom: 6px; }
 /* ---- 參數說明提示：桌機 hover、手機點擊（focus）都會顯示 ---- */

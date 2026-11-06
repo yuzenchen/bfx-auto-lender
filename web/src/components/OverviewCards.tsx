@@ -17,6 +17,16 @@ export function OverviewCards({ status, earnings }: { status: Status; earnings: 
   const todayValue = day ? `$${fmtUsd(day.amount)}` : "—";
   const todaySub = day ? (day.isToday ? `${fmtMd(day.mts)} 入帳` : `今日尚未入帳 · 顯示 ${fmtMd(day.mts)}`) : "";
 
+  // 本月／上月以瀏覽器本地時間的年月比對 earnings.monthly
+  const now = new Date();
+  const ym = (y: number, mIdx: number) => {
+    const d = new Date(y, mIdx, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
+  const monthTotal = (key: string) => earnings?.monthly.find((e) => e.month === key)?.total ?? 0;
+  const monthValue = earnings ? `$${fmtUsd(monthTotal(ym(now.getFullYear(), now.getMonth())))}` : "—";
+  const monthSub = earnings ? `上月 $${fmtUsd(monthTotal(ym(now.getFullYear(), now.getMonth() - 1)))}` : "";
+
   const stats = [
     {
       label: "放貸總額",
@@ -25,9 +35,9 @@ export function OverviewCards({ status, earnings }: { status: Status; earnings: 
       hero: true,
     },
     { label: "可用餘額", value: `$${fmtUsd(status.available)}`, sub: `掛單中 $${fmtUsd(offeredSum)}` },
-    { label: "最佳出借日利率", value: fmtDaily(m.bestAskDaily), sub: `年化 ${fmtApr(m.bestAskApr)}` },
     { label: "24h 最高日利率", value: fmtDaily(m.high24hDaily), sub: `年化 ${fmtApr(m.high24hApr)}` },
     { label: "本日收益", value: todayValue, sub: todaySub, accent: true },
+    { label: "本月收益", value: monthValue, sub: monthSub, accent: true },
   ];
   return (
     <section className="stats stats-5">
