@@ -15,6 +15,24 @@ export function SettingsPanel({
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
+  const storageKey = `strategyOpen:${location.pathname}`;
+  const [open, setOpen] = useState(() => {
+    try {
+      return localStorage.getItem(storageKey) === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleOpen = () => {
+    const next = !open;
+    setOpen(next);
+    try {
+      localStorage.setItem(storageKey, next ? "1" : "0");
+    } catch {
+      // 無法存取 localStorage 時僅保留本次狀態
+    }
+  };
 
   useEffect(() => setDraft(config), [config]);
   useEffect(() => () => clearTimeout(hideTimer.current), []);
@@ -82,10 +100,40 @@ export function SettingsPanel({
     ? Math.max((market.high24hDaily * draft.placeRatioPct) / 100, draft.minRateDailyPct)
     : 0;
 
+  // 收合時的摘要依「已儲存」設定顯示，而非未儲存的草稿
+  const chips: { text: string; on?: boolean }[] = [
+    { text: config.enabled ? "自動出借 開" : "自動出借 關", on: config.enabled },
+    { text: `範圍 ${config.minRateDailyPct}–${config.maxRateDailyPct}%` },
+    { text: `比例 ${config.placeRatioPct}%` },
+    { text: `${config.period} 天` },
+  ];
+  if (config.smallAmountThreshold > 0) {
+    chips.push({ text: `小額 <${config.smallAmountThreshold} → ${config.smallAmountPeriod} 天` });
+  }
+  chips.push(
+    config.smartRulesEnabled
+      ? { text: `智能規則 ${config.smartRules.length} 條`, on: true }
+      : { text: "智能規則 關" },
+  );
+
   return (
-    <section className="card">
-      <div className="card-head">
+    <section className="card strategy">
+      <button className="strategy-head" aria-expanded={open} onClick={toggleOpen}>
+        <span className={`collapse-caret${open ? " open" : ""}`}>▸</span>
         <h2>策略設定</h2>
+        <span className="strategy-chips">
+          {chips.map((c) => (
+            <span className={`chip${c.on ? " chip-on" : ""}`} key={c.text}>
+              {c.text}
+            </span>
+          ))}
+        </span>
+        <span className="spacer" />
+        <span className="strategy-toggle-text">{open ? "收合" : "展開"}</span>
+      </button>
+
+      <div className="strategy-body" hidden={!open}>
+      <div className="form">
         <div className="form-checkbox-row">
           <label className="form-checkbox">
             <input type="checkbox" checked={draft.enabled} onChange={(e) => set("enabled", e.target.checked)} />
@@ -99,10 +147,8 @@ export function SettingsPanel({
             ⓘ
           </span>
         </div>
-      </div>
 
-      <div className="form">
-        <div className="form-grid">
+        <div className="form-grid-4">
           <label className="field">
             <span className="tip" tabIndex={0} data-tip="24h 最高日利率低於此值時不掛單；同時是掛單利率的最低地板">日利率下限（%）</span>
             <input
@@ -123,19 +169,28 @@ export function SettingsPanel({
               onChange={(e) => set("maxRateDailyPct", Number(e.target.value))}
             />
           </label>
+          <label className="field">
+            <span className="tip" tabIndex={0} data-tip="掛單利率 = 24h 最高日利率 × 此比例。越低成交越快、但利率越低（建議 90–100）">掛單利率比例（% of 24h 最高）</span>
+            <input
+              type="number"
+              step="1"
+              min="1"
+              max="100"
+              value={draft.placeRatioPct}
+              onChange={(e) => set("placeRatioPct", Number(e.target.value))}
+            />
+          </label>
+          <label className="field">
+            <span className="tip" tabIndex={0} data-tip="成交後資金被鎖定的天數。短天期較靈活，長天期可鎖住當前利率">出借天數（2–120）</span>
+            <input
+              type="number"
+              min="2"
+              max="120"
+              value={draft.period}
+              onChange={(e) => set("period", Number(e.target.value))}
+            />
+          </label>
         </div>
-
-        <label className="field">
-          <span className="tip" tabIndex={0} data-tip="掛單利率 = 24h 最高日利率 × 此比例。越低成交越快、但利率越低（建議 90–100）">掛單利率比例（% of 24h 最高）</span>
-          <input
-            type="number"
-            step="1"
-            min="1"
-            max="100"
-            value={draft.placeRatioPct}
-            onChange={(e) => set("placeRatioPct", Number(e.target.value))}
-          />
-        </label>
 
         <div className="form-hint">
           換算年化{" "}
@@ -155,17 +210,7 @@ export function SettingsPanel({
           )}
         </div>
 
-        <div className="form-grid">
-          <label className="field">
-            <span className="tip" tabIndex={0} data-tip="成交後資金被鎖定的天數。短天期較靈活，長天期可鎖住當前利率">出借天數（2–120）</span>
-            <input
-              type="number"
-              min="2"
-              max="120"
-              value={draft.period}
-              onChange={(e) => set("period", Number(e.target.value))}
-            />
-          </label>
+        <div className="form-grid-4">
           <label className="field">
             <span className="tip" tabIndex={0} data-tip="把資金拆成多筆掛出的單筆上限，0 = 全部一筆掛出（拆分可分散到期時間）">單筆掛單金額（USD）</span>
             <input
@@ -302,6 +347,7 @@ export function SettingsPanel({
           </button>
           {message && <span className="form-message">{message}</span>}
         </div>
+      </div>
       </div>
     </section>
   );

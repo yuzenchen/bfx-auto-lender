@@ -13,6 +13,7 @@ import { HistoryPanel } from "./components/HistoryPanel";
 import { LogsPanel } from "./components/LogsPanel";
 
 const POLL_MS = 15_000;
+const EARNINGS_POLL_MS = 10 * 60_000;
 
 export default function App() {
   const [status, setStatus] = useState<Status | null>(null);
@@ -57,6 +58,14 @@ export default function App() {
     const timer = setInterval(() => void refresh(), POLL_MS);
     return () => clearInterval(timer);
   }, [loadAll, refresh]);
+
+  // Bitfinex 每日入帳一次，定期重抓收益讓「本日收益」更新
+  useEffect(() => {
+    const timer = setInterval(() => {
+      void api.getEarnings().then(setEarnings).catch(() => {});
+    }, EARNINGS_POLL_MS);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleSaveConfig = async (next: StrategyConfig) => {
     const saved = await api.saveConfig(next);
@@ -105,15 +114,13 @@ export default function App() {
 
       {error && <div className="error-banner">連線錯誤：{error}</div>}
 
-      {status && <OverviewCards status={status} />}
+      {status && <OverviewCards status={status} earnings={earnings} />}
       {status && <BotControl bot={status.bot} />}
+      {config && <SettingsPanel config={config} market={status?.market ?? null} onSave={handleSaveConfig} />}
 
       <div className="grid-2">
-        {config && <SettingsPanel config={config} market={status?.market ?? null} onSave={handleSaveConfig} />}
-        <div className="col">
-          {status && <OffersTable offers={status.offers} onCancel={handleCancelOffer} />}
-          <LogsPanel logs={logs} />
-        </div>
+        {status && <OffersTable offers={status.offers} onCancel={handleCancelOffer} />}
+        <LogsPanel logs={logs} />
       </div>
 
       {status && <CreditsTable credits={status.credits} />}
